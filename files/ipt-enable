@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Clear old rules
+/usr/local/sbin/ipt-disable
+
+# Applay new rules
+source /usr/local/etc/ipt.rules
+
+# Save new rules
+iptables-save >/etc/iptables/rules.v4
+
+# Show new rules
+/usr/local/sbin/ipt-show

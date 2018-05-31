@@ -1,0 +1,92 @@
+---
+
+# Checking block
+
+- block:
+
+  - name: "tumbumer.iptables: check os version"
+    fail:
+      msg: "OS must be Ubuntu 18.04 Bionic Beaver"
+    when: not (ansible_distribution == "Ubuntu" and ansible_distribution_release == "bionic")
+
+  - name: "tumbumer.iptables: checking for iptables and iptables-persistent is installed"
+    command: "dpkg-query -s iptables iptables-persistent"
+    register: ipt_packages_check
+    failed_when: ipt_packages_check.rc != 0
+    changed_when: false
+
+  when: tumbumer_iptables_action is defined and (tumbumer_iptables_action == "setup" or tumbumer_iptables_action == "update")
+
+# Setup block
+
+- block:
+
+  - name: "tumbumer.iptables: enable ipv4 forwarding"
+    become: true
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: 1
+      state: present
+    when: tumbumer_iptables_forward is defined and tumbumer_iptables_forward
+
+  - name: "tumbumer.iptables: disable ipv4 forwarding"
+    become: true
+    sysctl:
+      name: net.ipv4.ip_forward
+      state: absent
+    when: tumbumer_iptables_forward is defined and not tumbumer_iptables_forward
+
+  - name: "tumbumer.iptables: copy system helper tools"
+    become: true
+    copy:
+      src: "{{ role_path }}/files/{{ item }}"
+      dest: /usr/local/sbin
+      owner: root
+      group: staff
+      mode: 0755
+    with_items:
+    - ipt-disable
+    - ipt-enable
+    - ipt-show
+
+  - name: "tumbumer.iptables: get status of the locat iptables rules"
+    local_action: stat path="{{ inventory_dir }}/host_files/{{ inventory_hostname }}/usr/local/etc/ipt.rules"
+    register: tumbumer_iptables_local_rules
+
+  - name: "tumbumer.iptables: copy iptables default rules"
+    become: true
+    template:
+      src: ipt.rules.j2
+      dest: /usr/local/etc/ipt.rules
+      owner: root
+      group: root
+      mode: 0744
+    when: not tumbumer_iptables_local_rules.stat.exists
+    notify:
+      - tumbumer-ipt-enable
+
+  - name: "tumbumer.iptables: fetch iptables default rules"
+    fetch:
+      src: /usr/local/etc/ipt.rules
+      dest: "{{ inventory_dir }}/host_files"
+      fail_on_missing: yes
+    when: not tumbumer_iptables_local_rules.stat.exists
+
+  when: tumbumer_iptables_action is defined and tumbumer_iptables_action == "setup"
+
+# Update block
+
+- block:
+
+  - name: "tumbumer.iptables: update iptables rules"
+    become: true
+    copy:
+      src: "{{ inventory_dir }}/host_files/{{ inventory_hostname }}/usr/local/etc/ipt.rules"
+      dest: /usr/local/etc/ipt.rules
+      owner: root
+      group: root
+      mode: 0744
+    notify:
+      - tumbumer-ipt-enable
+
+  when: tumbumer_iptables_action is defined and tumbumer_iptables_action == "update"

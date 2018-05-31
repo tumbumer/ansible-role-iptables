@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Show rules in the filter table
+printf "\n*** FILTER ***\n\n"
+iptables -L -n -v --line-numbers -t filter
+
+# Show rules in the mangle table
+printf "\n*** MANGLE ***\n\n"
+iptables -L -n -v --line-numbers -t mangle
+
+# Show rules in the nat table
+printf "\n*** NAT ***\n\n"
+iptables -L -n -v --line-numbers -t nat

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Interfaces
+int_wan="{{ ansible_default_ipv4.interface }}"
+
+# Addresses
+ip_wan="{{ ansible_default_ipv4.address }}"
+
+# Ports
+#p_ssh=22
+
+# Set default policy
+iptables -P INPUT DROP
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD DROP
+
+#
+# INPUT (filter)
+#
+
+# Allow loopback input
+iptables -A INPUT -i lo -j ACCEPT
+
+# Drop invalid input
+iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
+
+# Allow established, related input
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Allow ICMP input
+iptables -A INPUT -p icmp -j ACCEPT
+
+# Allow wan SSH input
+#iptables -A INPUT -m conntrack --ctstate NEW -i ${int_wan} -d ${ip_wan} -p tcp --dport ${p_ssh} -j ACCEPT
+
+#
+# FORWARD (filter)
+#
+
+#
+# NAT
+#
