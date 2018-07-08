@@ -10,7 +10,8 @@ ip_wan="{{ ansible_default_ipv4.address }}"
 #p_ssh=22
 
 # Set default policy
-iptables -P INPUT DROP
+iptables -P INPUT ACCEPT
+# iptables -P INPUT DROP
 iptables -P OUTPUT ACCEPT
 iptables -P FORWARD DROP
 
